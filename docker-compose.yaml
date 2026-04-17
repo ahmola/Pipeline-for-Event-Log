@@ -1,0 +1,64 @@
+services:
+  postgres:
+    image: postgres:15
+    container_name: postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_ROOT_PASSWORD: 1234
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: 1234
+      POSTGRES_DB: event
+    restart: always
+    volumes:
+      - ./scripts/sql:/docker-entrypoint-initdb.d
+      # - event_data:/var/lib/postgresql/data
+    networks:
+      - event
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d event"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+  
+  event-generator:
+    depends_on:
+      postgres:
+        condition: service_healthy
+    build:
+      context: ./event-generator
+      dockerfile: Dockerfile
+    container_name: event-generator
+    ports:
+      - "8080:8080"
+    environment:
+      DB_DSN: "host=postgres user=user password=1234 dbname=event port=5432 sslmode=disable TimeZone=Asia/Seoul"
+      TZ: Asia/Seoul
+      PGTZ: Asia/Seoul
+      TICKER_SECONDS: 1
+    networks:
+      - event
+
+  grafana:
+    depends_on:
+      postgres:
+        condition: service_healthy
+    image: grafana/grafana-oss:12.4.3
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=1234
+    volumes:
+      - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources
+      - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards
+    networks:
+      - event
+
+volumes:
+  grafana_data:
+
+networks:
+  event:
+    driver: bridge
