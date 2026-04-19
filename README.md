@@ -36,6 +36,7 @@
 
 ## 아키텍처
 ![img](event_architecture.png)
+
 로컬 환경(Docker / KinD)에서 구동되는 데이터 파이프라인으로 구성되어 있으며, 이벤트 로그 생성부터 시각화까지의 과정을 자동화합니다.
 
 ### AWS 아키텍처 설계
@@ -85,7 +86,7 @@ metadata는 각 이벤트 발생 시 특별히 참고해야할 사항이나, 정
 - Grafana 컨테이너 기동 시 파일 기반 프로비저닝(`grafana/provisioning`)을 통해 PostgreSQL DataSource 및 기본 대시보드가 자동 등록됩니다.
 
 ### 분석 시각화
-![img](grafana-monitoring.png)
+![img](grafana_monitoring.png)
 - 이벤트 발생 추이와 에러 발생 등의 중요 지표를 시각화합니다.
 
 - **"Event Data Aggregation Analysis"** 대시보드를 구축해 실시간 이벤트 로그 통계를 모니터링합니다.
@@ -163,17 +164,17 @@ ORDER BY count DESC;
 ## Kubernetes
 - **Namespace**: 클러스터의 네임스페이스를 초기화하기 위해서 작성하였습니다.
 
-- **StatefulSet & PVC**: PostgreSQL는 데이터를 저장하고 관리하기 때문에, 상태를 저장해야하고 고정된 볼륨이 필요하므로 Deployment가 아닌 StatefulSet과 PVC를 사용했습니다.
+- **StatefulSet & PVC**: `PostgreSQL`은 데이터를 저장하고 관리하기 때문에, 상태를 저장해야하고 고정된 볼륨이 필요하므로 Deployment가 아닌 StatefulSet과 PVC를 사용했습니다.
 
 - **Deployment**: `event-generator`, `grafana`는 상태를 저장하지 않고, 유연한 복제와 Replica 관리가 필요하므로 Deployment를 사용했습니다.
 
-- **Service**: 각 파드들의 초기화 및 네트워크 연결을 위한 포트 설정을 위해서 작성하였습니다. grafana의 경우 외부 접속을 위해서 NodePort 타입으로 설정하고 
+- **Service**: 각 파드들의 초기화 및 네트워크 연결을 위한 포트 설정을 위해서 작성하였습니다.
 
 - **ConfigMap: Grafana**: 프로비저닝 파일들(dashboard.yaml, datasource, dashborad.json)들을 관리하기 위해서 선택하였습니다. 
 
-- **Secret**: Grafana와 Postgres 비밀번호 등 민감한 정보를 관리하기 위해서 선택하였습니다.
+- **Secret**: `Grafana`와 `Postgres` 비밀번호 등 민감한 정보를 관리하기 위해서 선택하였습니다.
 
 ## 회고
-- 처음에 프로젝트를 시작하기 전에, 기술 스택을 선택함에 있어서 많은 고민이 있었습니다. Spring과 Go 중에서 어떤 스택을 활용할지 고민했었는데, Spring의 경우 안정적이고 생태계가 잘 갖춰져있지만, Go의 경우에는 일일이 모든 것들을 작성해야 하는 번거로움이 있었지만, Spring 대비 압도적인 성능과 이미지 빌드 시 용량 차이가 크고, 결국 Kubernetes 인프라 환경을 고려할 때, Go가 더 적합하다고 판단하여 선택하게 되었습니다.
+- 처음에 프로젝트를 시작하기 전에, 기술 스택을 선택함에 있어서 많은 고민이 있었습니다. `Spring`과 `Go` 중에서 어떤 스택을 활용할지 고민했었는데, `Spring`의 경우 안정적이고 생태계가 잘 갖춰져있지만, `Go`의 경우에는 일일이 모든 것들을 작성해야 하는 번거로움이 있었지만, `Spring` 대비 압도적인 성능과 이미지 빌드 시 용량 차이가 크고, 결국 `Kubernetes` 인프라 환경을 고려할 때, `Go`가 더 적합하다고 판단하여 선택하게 되었습니다.
 
 - 쿼리를 작성할 때 있어서도 고민을 하게 되었는데, 결국 이러한 이벤트 로그를 보는 것은 개발자의 영역이라고 판단하여서 에러와 관련된 부분의 쿼리를 넣게 되었습니다. 또한 비즈니스적인 부분도 고민을 해서, 어떤 유저가 가장 활발하게 사용하는지(총 이벤트 수), 그리고 그러한 활발함이 실제 행동(구매, 환불)로 이어지는지, 그리고 구매와 환불의 상관관계 등을 확인하기 위한 쿼리를 작성했던 것 같습니다.
