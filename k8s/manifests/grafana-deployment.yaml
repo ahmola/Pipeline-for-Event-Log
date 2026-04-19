@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grafana
+  namespace: event-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: grafana
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: grafana
+    spec:
+      initContainers:
+        - name: wait-for-postgres
+          image: postgres:15
+          command:
+            [
+              "sh",
+              "-c",
+              "until pg_isready -h postgres -p 5432 -U user; do echo waiting for postgres; sleep 2; done;",
+            ]
+      containers:
+        - env:
+            - name: GF_SECURITY_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: grafana-secret
+                  key: admin_password
+          image: grafana/grafana-oss:12.4.3
+          imagePullPolicy: IfNotPresent
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: 3000
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          name: grafana
+          ports:
+            - containerPort: 3000
+              protocol: TCP
+          volumeMounts:
+            - mountPath: /etc/grafana/provisioning/datasources
+              name: grafana-cm0
+            - mountPath: /etc/grafana/provisioning/dashboards
+              name: grafana-cm1
+      restartPolicy: Always
+      volumes:
+        - configMap:
+            name: grafana-cm0
+          name: grafana-cm0
+        - configMap:
+            name: grafana-cm1
+          name: grafana-cm1

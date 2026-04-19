@@ -12,20 +12,21 @@ services:
     restart: always
     volumes:
       - ./scripts/sql:/docker-entrypoint-initdb.d
-      # - event_data:/var/lib/postgresql/data
     networks:
       - event
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U user -d event"]
+      test: ["CMD-SHELL", "psql -U user -d event -c 'SELECT 1'"]
       interval: 5s
-      timeout: 5s
-      retries: 10
-      start_period: 5s
+      timeout: 10s
+      retries: 100
+      start_period: 30s
   
   event-generator:
+    restart: always
     depends_on:
       postgres:
         condition: service_healthy
+    image: event-generator:latest
     build:
       context: ./event-generator
       dockerfile: Dockerfile
@@ -41,6 +42,7 @@ services:
       - event
 
   grafana:
+    restart: always
     depends_on:
       postgres:
         condition: service_healthy

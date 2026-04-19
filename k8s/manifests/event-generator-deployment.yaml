@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: event-generator
+  namespace: event-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: event-generator
+  template:
+    metadata:
+      labels:
+        app: event-generator
+    spec:
+      initContainers:
+        - name: wait-for-postgres
+          image: postgres:15
+          command:
+            [
+              "sh",
+              "-c",
+              "until pg_isready -h postgres -p 5432 -U user; do echo waiting for postgres; sleep 2; done;",
+            ]
+      containers:
+        - name: event-generator
+          image: event-generator
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: DB_DSN
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: db_dsn
+            - name: PGTZ
+              value: Asia/Seoul
+            - name: TICKER_SECONDS
+              value: "1"
+            - name: TZ
+              value: Asia/Seoul
+          ports:
+            - containerPort: 8080
+              protocol: TCP
+      restartPolicy: Always

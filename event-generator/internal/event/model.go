@@ -12,5 +12,5 @@ type Event struct {
 	Metadata  map[string]interface{} `gorm:"type:jsonb" json:"metadata"`
 }
 
-// 조회, 단순 클릭, 구매, 에러
-var eventTypes = []string{"page_view", "click", "purchase", "error"}
+// 조회, 구매, 환불, 에러
+var eventTypes = []string{"page_view", "purchase", "refund", "error"}

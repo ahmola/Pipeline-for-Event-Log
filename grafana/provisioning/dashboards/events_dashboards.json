@@ -22,13 +22,13 @@
     "panels": [
         {
             "datasource": {
-                "type": "grafana-postgresql-datasource",
+                "type": "postgres",
                 "uid": "postgres_event_db"
             },
             "fieldConfig": {
                 "defaults": {
                     "color": {
-                        "mode": "palette-classic"
+                        "mode": "thresholds"
                     },
                     "custom": {
                         "axisBorderShow": false,
@@ -74,7 +74,7 @@
                 "x": 0,
                 "y": 0
             },
-            "id": 5,
+            "id": 1,
             "options": {
                 "barRadius": 0,
                 "barWidth": 0.97,
@@ -104,7 +104,7 @@
                     "editorMode": "code",
                     "format": "table",
                     "rawQuery": true,
-                    "rawSql": "SELECT metadata->>'code' as ErrorResponse, count(*)\nFROM events\nWHERE event_type = 'error' AND $__timeFilter(created_at)\nGROUP BY 1;",
+                    "rawSql": "SELECT \n  metadata->>'code' as ErrorResponse,\n  CASE \n    WHEN (metadata->>'code')::int BETWEEN 400 AND 499 THEN '4xx'\n    WHEN (metadata->>'code')::int BETWEEN 500 AND 599 THEN '5xx'\n    ELSE 'Etc'\n  END as ErrorType,\n  count(*) as Count\nFROM events\nWHERE event_type = 'error' AND $__timeFilter(created_at)\nGROUP BY 1, 2\nORDER BY Count;",
                     "refId": "메타데이터 내 에러별 집계",
                     "sql": {
                         "columns": [
@@ -130,7 +130,7 @@
         },
         {
             "datasource": {
-                "type": "grafana-postgresql-datasource",
+                "type": "postgres",
                 "uid": "postgres_event_db"
             },
             "fieldConfig": {
@@ -161,7 +161,7 @@
                 "x": 6,
                 "y": 0
             },
-            "id": 4,
+            "id": 2,
             "options": {
                 "minVizHeight": 75,
                 "minVizWidth": 75,
@@ -210,7 +210,7 @@
         },
         {
             "datasource": {
-                "type": "grafana-postgresql-datasource",
+                "type": "postgres",
                 "uid": "postgres_event_db"
             },
             "fieldConfig": {
@@ -246,7 +246,20 @@
                         ]
                     }
                 },
-                "overrides": []
+                "overrides": [
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "user_id"
+                        },
+                        "properties": [
+                            {
+                                "id": "custom.width",
+                                "value": 88
+                            }
+                        ]
+                    }
+                ]
             },
             "gridPos": {
                 "h": 5,
@@ -254,7 +267,7 @@
                 "x": 13,
                 "y": 0
             },
-            "id": 2,
+            "id": 3,
             "options": {
                 "cellHeight": "sm",
                 "showHeader": true,
@@ -272,7 +285,7 @@
                     "editorMode": "code",
                     "format": "table",
                     "rawQuery": true,
-                    "rawSql": "SELECT \n  user_id, \n  count(*) as total_events\nFROM events\nWHERE $__timeFilter(created_at)\nGROUP BY user_id\nORDER BY total_events DESC\nLIMIT 15;",
+                    "rawSql": "SELECT \n  user_id, \n  COUNT(*) FILTER (WHERE event_type = 'purchase') as purchase_count,\n  COUNT(*) FILTER (WHERE event_type = 'refund') as refund_count,\n  COUNT(*) FILTER (WHERE event_type IN ('purchase', 'refund')) as total_activity\nFROM events\nWHERE $__timeFilter(created_at)\nGROUP BY user_id\nORDER BY total_activity DESC\nLIMIT 15;",
                     "refId": "유저별 총 이벤트 수",
                     "sql": {
                         "columns": [
@@ -298,7 +311,7 @@
         },
         {
             "datasource": {
-                "type": "grafana-postgresql-datasource",
+                "type": "postgres",
                 "uid": "postgres_event_db"
             },
             "fieldConfig": {
@@ -363,7 +376,7 @@
                 "x": 0,
                 "y": 5
             },
-            "id": 3,
+            "id": 4,
             "options": {
                 "legend": {
                     "calcs": [],
@@ -382,9 +395,9 @@
                 {
                     "dataset": "event",
                     "editorMode": "code",
-                    "format": "table",
+                    "format": "time_series",
                     "rawQuery": true,
-                    "rawSql": "SELECT \n  $__timeGroupAlias(created_at, $__interval), \n  event_type, \n  count(*) AS count\nFROM events\nWHERE $__timeFilter(created_at)\nGROUP BY 1, 2\nORDER BY 1;",
+                    "rawSql": "SELECT \n $__timeGroupAlias(created_at, $__interval), \n event_type AS metric, \n count(*) AS count \n FROM events \n WHERE \n $__timeFilter(created_at) AND \n event_type IN ('page_view', 'purchase', 'refund', 'error') \n GROUP BY 1, 2 \n ORDER BY 1;",
                     "refId": "시간대별 이벤트 추이",
                     "sql": {
                         "columns": [
@@ -410,7 +423,8 @@
         },
         {
             "datasource": {
-                "uid": "PostgreSQL"
+                "type": "postgres",
+                "uid": "postgres_event_db"
             },
             "fieldConfig": {
                 "defaults": {
@@ -461,7 +475,7 @@
                 "x": 12,
                 "y": 5
             },
-            "id": 1,
+            "id": 5,
             "options": {
                 "barRadius": 0,
                 "barWidth": 0.97,
@@ -530,7 +544,7 @@
     "timepicker": {},
     "timezone": "browser",
     "title": "데이터 집계 분석",
-    "uid": "adcg79g",
-    "version": 10,
+    "uid": "event-analysis-id",
+    "version": 2,
     "weekStart": ""
 }
