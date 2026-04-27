@@ -8,6 +8,8 @@ kind load docker-image event-generator:latest --name $NAMESPACE
 
 # 메니페스트 적용
 kubectl apply -f ./k8s/manifests
+# ArgoCD Manifest
+kubectl apply -n $NAMESPACE -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
 
 # 파드 상태 확인 대기
 while [ -z "$(kubectl get pods -n $NAMESPACE --no-headers 2>/dev/null)" ]; do
@@ -18,6 +20,9 @@ echo "Intialized Pods!"
 
 kubectl wait --for=condition=Ready pod --all -n $NAMESPACE --timeout=-1s
 echo "All pods are running!"
+
+# ArgoCD 초기 비밀번호
+kubectl get secret -n $NAMESPACE argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
 
 # 사용자에게 실행 여부 확인
 read -p "Do you want to forward Grafana? [y/n]: " answer
@@ -30,4 +35,3 @@ if [[ "$answer" == "y" || "$answer" == "Y" ]]; then
 else
     echo "Port-forwarding cancelled."
 fi
-

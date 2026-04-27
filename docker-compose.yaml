@@ -32,7 +32,7 @@ services:
       dockerfile: Dockerfile
     container_name: event-generator
     ports:
-      - "8080:8080"
+      - "8888:8888"
     environment:
       DB_DSN: "host=postgres user=user password=1234 dbname=event port=5432 sslmode=disable TimeZone=Asia/Seoul"
       TZ: Asia/Seoul

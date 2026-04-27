@@ -21,6 +21,10 @@ func main() {
 	// 헬스체크 엔드포인트 생성
 	slog.Info("Health Check Endpoint Init")
 	healthCheck := gin.Default()
+	env_port := os.Getenv("PORT")
+	if env_port == "" {
+		env_port = "8080"
+	}
 
 	healthCheck.GET("/health", func(c *gin.Context) {
 		// db상태 확인
@@ -32,6 +36,7 @@ func main() {
 
 		c.JSON(200, gin.H{"status": "ok"})
 	})
+	healthCheck.Run(":" + env_port)
 
 	// 주기의 티커
 	env_sec, err := strconv.ParseInt(os.Getenv("TICKER_SECONDS"), 10, 32)
